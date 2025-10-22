@@ -1,4 +1,3 @@
-// File: app/build.gradle.kts
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -6,31 +5,26 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // opzionale: puoi tenerlo, ma il placeholder funziona comunque grazie al blocco defaultConfig
-    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("com.google.devtools.ksp")
 }
 
 android {
     namespace = "com.example.travelcompanion"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.travelcompanion"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Legge la key da secrets.properties nella root del progetto
-        val secretsFile = rootProject.file("secrets.properties")
-        val secretsProps = Properties().apply {
-            if (secretsFile.exists()) {
-                FileInputStream(secretsFile).use { load(it) }
-            }
-        }
-        // Inietta il placeholder usato nel Manifest
-        manifestPlaceholders["MAPS_API_KEY"] = secretsProps.getProperty("MAPS_API_KEY", "")
+        // Inietta MAPS_API_KEY leggendo secrets.properties dalla root del progetto
+        val f = rootProject.file("secrets.properties")
+        val props = Properties().apply { if (f.exists()) FileInputStream(f).use { load(it) } }
+        manifestPlaceholders["MAPS_API_KEY"] = props.getProperty("MAPS_API_KEY", "")
     }
 
     buildTypes {
@@ -40,6 +34,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 
@@ -51,6 +48,12 @@ android {
     buildFeatures { compose = true }
 }
 
+// Config opzionale del Secrets plugin (fallback file di default)
+secrets {
+    propertiesFileName = "secrets.properties"
+ //   defaultPropertiesFileName = "local.defaults.properties"
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -60,14 +63,20 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-
-    // Google Maps + Location
+    implementation("com.google.android.material:material:1.12.0")
+    // Maps
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
-
-    // Compose Maps (se lo usi)
     implementation(libs.maps.compose)
 
+    // Room con KSP
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    implementation(libs.androidx.navigation.compose)
+
+    // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -75,4 +84,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 }

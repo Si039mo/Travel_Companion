@@ -3,49 +3,84 @@ package com.example.travelcompanion
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.travelcompanion.ui.navigation.NavGraph
+import com.example.travelcompanion.ui.navigation.Screen
+import androidx.compose.material.icons.filled.Info
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    MapScreen()
-                }
+                MainScreen()
             }
         }
     }
 }
 
 @Composable
-fun MapScreen() {
-    val bologna = LatLng(44.4949, 11.3426)
+fun MainScreen() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(bologna, 12f)
-    }
+    Scaffold(
+        bottomBar = {
+            if (shouldShowBottomBar(currentRoute)) {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.Home.route,
+                        onClick = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                        },
+                        icon = { Icon(Icons.Default.Home, "Home") },
+                        label = { Text("Home") }
+                    )
 
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
-    ) {
-        Marker(
-            state = MarkerState(position = bologna),
-            title = "Bologna",
-            snippet = "Test Google Maps!"
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.TripList.route,
+                        onClick = {
+                            navController.navigate(Screen.TripList.route)
+                        },
+                        icon = { Icon(Icons.Default.List, "Viaggi") },
+                        label = { Text("Viaggi") }
+                    )
+
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.Stats.route,
+                        onClick = {
+                            navController.navigate(Screen.Stats.route)
+                        },
+                        icon = { Icon(Icons.Default.Info, "Stats") },  // ← CAMBIATO
+                        label = { Text("Stats") }
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        NavGraph(
+            navController = navController,
+            modifier = Modifier.padding(paddingValues)
         )
     }
+}
+
+private fun shouldShowBottomBar(route: String?): Boolean {
+    return route in listOf(
+        Screen.Home.route,
+        Screen.TripList.route,
+        Screen.Stats.route
+    )
 }

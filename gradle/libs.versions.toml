@@ -9,6 +9,9 @@ lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 composeBom = "2024.09.00"
 secretsGradlePlugin = "2.0.1"
+room = "2.6.1"
+ksp = "2.0.21-1.0.16"
+navigation = "2.7.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,10 +31,14 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version = "18.2.0" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version = "21.1.0" }
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version = "4.3.3" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-android-libraries-mapsplatform-secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
-
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
