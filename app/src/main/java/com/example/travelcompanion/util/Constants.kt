@@ -5,7 +5,7 @@ object Constants {
     const val DATABASE_NAME = "travel_companion_db"
 
     // Location
-    const val LOCATION_UPDATE_INTERVAL = 5000L // 5 secondi
+    const val LOCATION_UPDATE_INTERVAL = 3000L // 5 secondi
     const val LOCATION_FASTEST_INTERVAL = 2000L // 2 secondi
     const val LOCATION_MAX_WAIT_TIME = 10000L // 10 secondi
 
