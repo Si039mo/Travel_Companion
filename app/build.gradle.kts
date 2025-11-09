@@ -21,7 +21,7 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Inietta MAPS_API_KEY leggendo secrets.properties dalla root del progetto
+        // inserisce MAPS_API_KEY leggendo secrets.properties dalla root del progetto
         val f = rootProject.file("secrets.properties")
         val props = Properties().apply { if (f.exists()) FileInputStream(f).use { load(it) } }
         manifestPlaceholders["MAPS_API_KEY"] = props.getProperty("MAPS_API_KEY", "")
@@ -51,7 +51,6 @@ android {
 // Config opzionale del Secrets plugin (fallback file di default)
 secrets {
     propertiesFileName = "secrets.properties"
- //   defaultPropertiesFileName = "local.defaults.properties"
 }
 
 dependencies {
