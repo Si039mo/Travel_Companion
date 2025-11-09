@@ -1,5 +1,8 @@
 package com.example.travelcompanion.ui.triplist
 
+
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -127,31 +130,52 @@ fun FilterChips(
     selectedFilter: TripType?,
     onFilterSelected: (TripType?) -> Unit
 ) {
-    Row(
+    // Usa Column + Row con scroll orizzontale
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        FilterChip(
-            selected = selectedFilter == null,
-            onClick = { onFilterSelected(null) },
-            label = { Text("Tutti") }
+        // Titolo (opzionale)
+        Text(
+            text = "Filtra per tipo:",
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        TripType.values().forEach { type ->
+        // Row scrollabile
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Chip "Tutti"
             FilterChip(
-                selected = selectedFilter == type,
-                onClick = { onFilterSelected(type) },
-                label = {
-                    Text(
-                        when(type) {
-                            TripType.LOCAL -> "🏙️ Locale"
-                            TripType.DAY -> "🚗 Giornaliero"
-                            TripType.MULTI_DAY -> "✈️ Multi-giorno"
-                        }
-                    )
-                }
+                selected = selectedFilter == null,
+                onClick = { onFilterSelected(null) },
+                label = { Text("Tutti") }
+            )
+
+            // Chip LOCAL
+            FilterChip(
+                selected = selectedFilter == TripType.LOCAL,
+                onClick = { onFilterSelected(TripType.LOCAL) },
+                label = { Text("🏙️ Locale") }
+            )
+
+            // Chip DAY
+            FilterChip(
+                selected = selectedFilter == TripType.DAY,
+                onClick = { onFilterSelected(TripType.DAY) },
+                label = { Text("🚗 Giorno") }
+            )
+
+            // Chip MULTI_DAY
+            FilterChip(
+                selected = selectedFilter == TripType.MULTI_DAY,
+                onClick = { onFilterSelected(TripType.MULTI_DAY) },
+                label = { Text("✈️ Multi-giorno") }
             )
         }
     }
@@ -214,16 +238,24 @@ fun TripCard(
                     )
                 }
 
-                // Badge se attivo
+
+                // Badge con stato viaggio
+                Spacer(modifier = Modifier.height(4.dp))
                 if (trip.isActive) {
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "🔴 In corso",
+                        text = "🔴 In viaggio...",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )
+                } else {
+                    Text(
+                        text = "✅ Completato",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
+
 
             // Bottone elimina
             IconButton(onClick = onDeleteClick) {

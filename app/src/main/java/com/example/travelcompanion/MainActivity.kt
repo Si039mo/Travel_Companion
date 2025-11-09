@@ -16,10 +16,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.travelcompanion.ui.navigation.NavGraph
 import com.example.travelcompanion.ui.navigation.Screen
 import androidx.compose.material.icons.filled.Info
-
+import com.example.travelcompanion.background.WorkManagerScheduler
+import androidx.compose.material.icons.filled.TrendingUp
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WorkManagerScheduler.schedulePeriodicNotifications(this)
         setContent {
             MaterialTheme {
                 MainScreen()
@@ -66,6 +69,14 @@ fun MainScreen() {
                         icon = { Icon(Icons.Default.Info, "Stats") },  // ← CAMBIATO
                         label = { Text("Stats") }
                     )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.Prediction.route,
+                        onClick = {
+                            navController.navigate(Screen.Prediction.route)
+                        },
+                        icon = { Icon(Icons.Filled.TrendingUp, "Previsioni") },
+                        label = { Text("Previsioni") }
+                    )
                 }
             }
         }
@@ -81,6 +92,8 @@ private fun shouldShowBottomBar(route: String?): Boolean {
     return route in listOf(
         Screen.Home.route,
         Screen.TripList.route,
-        Screen.Stats.route
+        Screen.Stats.route,
+        Screen.Prediction.route
+
     )
 }

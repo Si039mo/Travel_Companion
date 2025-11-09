@@ -11,7 +11,7 @@ import com.example.travelcompanion.ui.home.HomeScreen
 import com.example.travelcompanion.ui.stats.StatsScreen
 import com.example.travelcompanion.ui.tripdetail.TripDetailScreen
 import com.example.travelcompanion.ui.triplist.TripListScreen
-
+import com.example.travelcompanion.ui.prediction.PredictionScreen
 
 
 @Composable
@@ -63,6 +63,13 @@ fun NavGraph(
 
         composable(Screen.Stats.route) {
             StatsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(Screen.Prediction.route) {
+            PredictionScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

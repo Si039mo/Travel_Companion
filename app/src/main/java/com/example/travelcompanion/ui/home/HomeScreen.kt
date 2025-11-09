@@ -1,6 +1,8 @@
 package com.example.travelcompanion.ui.home
 
 import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -19,12 +21,12 @@ import com.example.travelcompanion.data.local.entity.TripType
 import com.example.travelcompanion.data.repository.TripRepository
 import com.example.travelcompanion.service.LocationService
 import com.example.travelcompanion.util.PermissionHelper
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,11 +57,81 @@ fun HomeScreen(
     var selectedTripType by remember { mutableStateOf(TripType.LOCAL) }
     var showTripTypeDialog by remember { mutableStateOf(false) }
 
+    // Posizione corrente dell'utente
+    var currentUserLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    // Stats del viaggio corrente (solo distanza e punti)
+    var currentTrip by remember { mutableStateOf<Trip?>(null) }
+    var locationCount by remember { mutableIntStateOf(0) }
+
     // Launcher per richiedere permessi
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         hasLocationPermission = permissions.values.all { it }
+    }
+
+    // Ottieni posizione iniziale dell'utente
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            try {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+                if (ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        location?.let {
+                            currentUserLocation = LatLng(it.latitude, it.longitude)
+                        }
+                    }
+                }
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
+        }
+
+    }
+
+    // Aggiorna posizione e stats durante il tracking (ogni 3 secondi)
+    LaunchedEffect(isTracking) {
+        if (isTracking && currentTripId != -1L) {
+            while (isTracking) {
+                try {
+                    // Ottieni ultima posizione dal DB
+                    val locations = repository.getLocationsForTripSync(currentTripId)
+                    if (locations.isNotEmpty()) {
+                        val lastLocation = locations.last()
+                        currentUserLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
+                        locationCount = locations.size
+                    }
+
+                    // Aggiorna stats viaggio
+                    currentTrip = repository.getTripById(currentTripId)
+
+                    delay(3000) // Ogni 3 secondi
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        } else {
+            locationCount = 0
+            currentTrip = null
+        }
+    }
+
+    // 🧹 Aggiungi questo blocco sotto:
+    DisposableEffect(Unit) {
+        onDispose {
+            // Ferma il tracking se la schermata viene chiusa
+            isTracking = false
+        }
     }
 
     Scaffold(
@@ -80,7 +152,11 @@ fun HomeScreen(
                 .padding(padding)
         ) {
             // Mappa
-            MapView(hasLocationPermission)
+            MapView(
+                hasLocationPermission = hasLocationPermission,
+                isTracking = isTracking,
+                userLocation = currentUserLocation
+            )
 
             // Controlli in basso
             Column(
@@ -90,18 +166,53 @@ fun HomeScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Tipo viaggio
-                if (isTracking) {
+                // Card info viaggio corrente
+                if (isTracking && currentTrip != null) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     ) {
-                        Text(
-                            text = "🚗 Registrando: ${selectedTripType.name}",
+                        Column(
                             modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "🚗 Registrando: ${
+                                    when(selectedTripType) {
+                                        TripType.LOCAL -> "Locale"
+                                        TripType.DAY -> "Giornaliero"
+                                        TripType.MULTI_DAY -> "Multi-giorno"
+                                    }
+                                }",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "%.2f km".format(currentTrip?.totalDistance),
+                                        style = MaterialTheme.typography.headlineSmall
+                                    )
+                                    Text(
+                                        text = "Distanza",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "$locationCount",
+                                        style = MaterialTheme.typography.headlineSmall
+                                    )
+                                    Text(
+                                        text = "Punti GPS",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -192,23 +303,45 @@ fun HomeScreen(
 }
 
 @Composable
-fun MapView(hasPermission: Boolean) {
-    // Posizione default: Bologna
-    val bologna = LatLng(44.4949, 11.3426)
+fun MapView(
+    hasLocationPermission: Boolean,
+    isTracking: Boolean,
+    userLocation: LatLng?
+) {
+    // Posizione default (Bologna) se non abbiamo GPS
+    val defaultPosition = LatLng(44.4949, 11.3426)
+
+    // Usa posizione utente se disponibile, altrimenti default
+    val displayPosition = userLocation ?: defaultPosition
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(bologna, 12f)
+        position = CameraPosition.fromLatLngZoom(displayPosition, 15f)
     }
+
+    LaunchedEffect(displayPosition) {
+        if (!isTracking) {
+            // Aggiorna camera quando otteniamo la posizione iniziale
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(displayPosition, 15f),
+                durationMs = 1000
+            )
+        }
+    }
+
 
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
+        cameraPositionState = cameraPositionState,
+        properties = MapProperties(
+            isMyLocationEnabled = hasLocationPermission
+        )
     ) {
-        if (hasPermission) {
+        // Mostra marker solo durante tracking
+        if (isTracking && userLocation != null) {
             Marker(
-                state = MarkerState(position = bologna),
-                title = "La tua posizione",
-                snippet = "Bologna"
+                state = MarkerState(position = userLocation),
+                title = "In viaggio",
+                snippet = "Posizione corrente"
             )
         }
     }

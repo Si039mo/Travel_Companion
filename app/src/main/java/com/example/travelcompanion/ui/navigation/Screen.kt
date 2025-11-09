@@ -7,4 +7,5 @@ sealed class Screen(val route: String) {
         fun createRoute(tripId: Long) = "trip_detail/$tripId"
     }
     object Stats : Screen("stats")
+    object Prediction : Screen("prediction")
 }
